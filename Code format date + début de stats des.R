@@ -87,18 +87,3 @@ comp_infl_mid$expected=lag(comp_infl_mid$name,36)
 comp_infl_mid$dif=comp_infl_mid$expected-comp_infl_mid$tx_evol_ann_pct
 
 ggplot(comp_infl_mid) + geom_line(aes(x = date, y = expected,colour='Expected'))+geom_line(aes(x = date, y = tx_evol_ann_pct,colour='Real'))+ylab('Inflation rate')+scale_color_manual(name = "Inflation", values = c("Real"='red', "Expected"='blue'))+scale_x_date(limits = c(as.Date('2016-05-01'),as.Date('2020-01-01')))+ggtitle('Comparaison inflation anticipée à m-36 et inflation réalisée')
-
-# --------- On passe maintenant aux histograms pour étudier l'hétérogénéité des réponses"
-
-#création d'un dataframe pour regrouper toutes les réponses:
-rep_short_13=data.frame(
-  date=Enq13$date,
-  short=Enq13$Q8v2part2
-)
-rep_short_17=data.frame(
-  date=Enq17$date,
-  short=Enq17$Q8v2part2
-)
-rep_short=rbind(rep_short_13,rep_short_17)
-
-ggplot(rep_short, aes(x=short)) + geom_histogram(binwidth = 1,col='grey')+coord_cartesian(xlim=c(-5,15))+scale_x_continuous(breaks = seq(-5,15,1), lim = c(-5,15))+xlab('Inflation anticiée 12 mois après enquête')
