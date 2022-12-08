@@ -145,5 +145,147 @@ Enq_tot<-filter(Enq_tot_1,abs(Q8v2part2)<100 & abs(Q9bv2part2)<100)
 
 scatterplot(Q9bv2part2~Q8v2part2, data=Enq_tot)
 
+reg1=lm(Q9bv2part2~Q8v2part2, data=Enq_tot)
+summary(reg1)
+
+
+# Formattage de données pour faire des régressions :
+test<-Enq_tot
+
+# Ici, on s'occupe de regrouper toutes les infos sur les revenus en un vecteur :
+test$income
+
+for(i in 1:length(Enq_tot$userid)){
+  if (is.na(test$D6[i])==FALSE)
+  {test$income[i]=test$D6[i]}
+  if (is.na(test$Q47[i])==FALSE)
+  {test$income[i]=test$Q47[i]}
+}
+
+#C'est fait. Maintenant, on va créer des vecteurs binaires Low income et middle income pour reproduire l'analyse de Bellemare:
+# On crée ici la variable low income: 0-50 000 $ par an : 
+test$low_income
+
+for(i in 1:length(test$userid)){
+  if(is.na(test$income[i])){test$low_income[i]=NA} else{
+  if (test$income[i]<=5)
+  {test$low_income[i]<-1} else 
+  {test$low_income[i]<-0}}
+}
+# On crée ici la variable middle income: 50-100 000 $ par an :
+test$middle_income
+for(i in 1:length(test$userid)){
+  if(is.na(test$income[i])){test$middle_income[i]=NA} else{
+    if (test$income[i]>=6 & test$income[i]<=8)
+    {test$middle_income[i]<-1} else 
+    {test$middle_income[i]<-0}}
+}
+
+# On s'occupe maintenant de l'éducation:
+for(i in 1:length(test$userid)){if(is.na(test$QNUM1[i])==FALSE){
+  test$QNUM1[test$userid==test$userid[i]]<-test$QNUM1[i]
+  test$QNUM2[test$userid==test$userid[i]]<-test$QNUM2[i]
+  test$QNUM3[test$userid==test$userid[i]]<-test$QNUM3[i]
+  test$QNUM4[test$userid==test$userid[i]]<-test$QNUM4[i]
+  test$QNUM5[test$userid==test$userid[i]]<-test$QNUM5[i]
+  test$QNUM6[test$userid==test$userid[i]]<-test$QNUM6[i]
+  test$QNUM7[test$userid==test$userid[i]]<-test$QNUM7[i]
+  test$QNUM8[test$userid==test$userid[i]]<-test$QNUM8[i]
+  test$QNUM9[test$userid==test$userid[i]]<-test$QNUM9[i]
+  
+  
+  
+  
+}}
+# On crée ensuite deux vecteurs: un qui code le nombre de bonnes réponses, l'autre le nombre de réponses manquantes:
+# En fait c'était inutile la variable est déjà codée :)
+test$empty_answers=c(0)
+test$right_answers=c(0)
+for(i in 1:length(test$userid)){
+  if(is.na(test$QNUM1[i])==FALSE){
+  if(test$QNUM1[i]==150){test$right_answer[i]=test$right_answer[i]+1}
+}else{test$empty_answer[i]=test$empty_answer[i]+1}
+  if(is.na(test$QNUM2[i])==FALSE){
+    if(test$QNUM2[i]==242){test$right_answer[i]=test$right_answer[i]+1}
+  }else{test$empty_answer[i]=test$empty_answer[i]+1}
+  if(is.na(test$QNUM3[i])==FALSE){
+    if(test$QNUM3[i]==10){test$right_answer[i]=test$right_answer[i]+1}
+  }else{test$empty_answer[i]=test$empty_answer[i]+1}
+  if(is.na(test$QNUM5[i])==FALSE){
+    if(test$QNUM5[i]==100){test$right_answer[i]=test$right_answer[i]+1}
+  }else{test$empty_answer[i]=test$empty_answer[i]+1}
+  if(is.na(test$QNUM6[i])==FALSE){
+    if(test$QNUM6[i]==5){test$right_answer[i]=test$right_answer[i]+1}
+  }else{test$empty_answer[i]=test$empty_answer[i]+1}
+  if(is.na(test$QNUM8[i])==FALSE){
+    if(test$QNUM8[i]==2 | test$QNUM8[i]==TRUE){test$right_answer[i]=test$right_answer+1}
+  }else{test$empty_answer[i]=test$empty_answer[i]+1}
+  if(is.na(test$QNUM9[i])==FALSE){
+    if(test$QNUM9[i]==2 | test$QNUM9[i]==FALSE){test$right_answer[i]=test$right_answer+1}
+  }else{test$empty_answer[i]=test$empty_answer[i]+1}
+}
+
+# Ici on va se servir de la variable déjà codé pour créer une variable binaire:
+names(test)[names(test) == "_NUM_CAT"] <- "NUM_CAT"
+
+for(i in 1:length(test$userid)){
+  if(is.na(test$NUM_CAT[i])){test$low_numeracy[i]=NA} else{
+    if (test$NUM_CAT[i]=='Low')
+    {test$low_numeracy[i]<-1} else 
+    {test$low_numeracy[i]<-0}}
+}
+
+#création de la variable young et middle age:
+names(test)[names(test) == "_AGE_CAT"] <- "AGE_CAT"
+test$young=c(0)
+test$middle_age=c(0)
+for(i in 1:length(test$userid)){
+  if(is.na(test$AGE_CAT[i])){test$young[i]=NA
+  test$middle_age[i]=NA} else{
+    if (test$AGE_CAT[i]=='Under 40')
+    {test$young[i]<-1} else 
+    {test$young[i]<-0}
+    if(test$AGE_CAT[i]=='40 to 60')
+    {test$middle_age[i]<-1} else 
+    {test$middle_age[i]<-0}}
+}
+
+#création des variables sur le niveau d'étude: 
+names(test)[names(test) == "_EDU_CAT"] <- "EDUC_CAT"
+test$some_college=c(0)
+test$high_school=c(0)
+for(i in 1:length(test$userid)){
+  if(is.na(test$EDUC_CAT[i])){test$some_college[i]=NA
+  test$high_school[i]=NA} else{
+    if (test$EDUC_CAT[i]=='High School')
+    {test$high_school[i]<-1} else 
+    {test$high_school[i]<-0}
+    if(test$EDUC_CAT[i]=='Some College')
+    {test$some_college[i]<-1} else 
+    {test$some_college[i]<-0}}
+}
+
+#Création de la variable genre:
+# on s'occupe de mettre des variables de genre pour toutes les réponses:
+for(i in 1:length(test$userid)){if(is.na(test$Q33[i])==FALSE){
+  test$Q33[test$userid==test$userid[i]]<-test$Q33[i]}}
+
+# Maintenant on peut créer la variable:
+
+test$female=c(0)
+for(i in 1:length(test$userid)){
+  if(is.na(test$Q33[i])){test$female[i]=NA
+ } else{
+    if (test$Q33[i]==2)
+    {test$female[i]<-1} else 
+    {test$female[i]<-0}
+    }
+}
+
+# Maintenant on s'occupe de renseigner le taux d'inflation au moment de la réponse:
+test$current_inflation=c(0)
+for(i in 1:length(inflation_US3$date)){
+  test$current_inflation[test$date==inflation_US3$date[i]]<-inflation_US3$tx_evol_ann_pct[i]}
+
 
 
