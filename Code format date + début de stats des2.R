@@ -2,6 +2,8 @@ library(ggplot2)
 library(dplyr)
 library(lubridate)
 library(car)
+library(stargazer)
+library(survey)
 
 OECD <- OECD_short_term_economic_indicators
 IMF<- IMF_monetary_policy
@@ -37,47 +39,27 @@ Enq20$date=ymd(paste(Enq20$date,'01',sep=''))
 
 # ---------- Graphique des anticipations d'inflation à court terme ---------------------
 
-anticipations_short_13=Enq13 %>%                        
-group_by(date) %>%                        
-  summarise_at(vars(Q8v2part2),
-               list(name = mean),na.rm = TRUE)
-
-anticipations_short_17=Enq17 %>%                        
+anticipation_short_pond=Enq_tot %>%                        
   group_by(date) %>%                        
-  summarise_at(vars(Q8v2part2),
-               list(name = mean),na.rm = TRUE)
+  summarise_at(vars(Q8v2part2,weight),
+               list(name = weighted.mean),na.rm = TRUE)
 
-anticipations_short_20=Enq20 %>%                        
-  group_by(date) %>%                        
-  summarise_at(vars(Q8v2part2),
-               list(name = mean),na.rm = TRUE)
 
-anticipations_short=rbind(anticipations_short_13, anticipations_short_17,anticipations_short_20)
 
 
 ggplot(anticipations_short) + geom_line(aes(x = date, y = name))+ylab('Expected inflation - 12 months')
 
 # ---------- Graphique des anticipations d'inflation à moyen terme ---------------------
 
-anticipations_mid_13=Enq13 %>%                        
+anticipation_mid_pond=Enq_tot %>%                        
   group_by(date) %>%                        
-  summarise_at(vars(Q9bv2part2),
-               list(name = mean),na.rm = TRUE)
-
-anticipations_mid_17=Enq17 %>%                        
-  group_by(date) %>%                        
-  summarise_at(vars(Q9bv2part2),
-               list(name = mean),na.rm = TRUE)
-
-anticipations_mid_20=Enq20 %>%                        
-  group_by(date) %>%                        
-  summarise_at(vars(Q9bv2part2),
-               list(name = mean),na.rm = TRUE)
+  summarise_at(vars(Q9bv2part2,weight),
+               list(name = weighted.mean),na.rm = TRUE)
 
 anticipations_mid=rbind(anticipations_mid_13, anticipations_mid_17,anticipations_mid_20)
 
 
-ggplot(anticipations_mid) + geom_line(aes(x = date, y = name))+ylab('Expected inflation - in 36 months')
+ggplot(anticipation_mid_pond) + geom_line(aes(x = date, y = Q9bv2part2_name))+ylab('Expected inflation - in 36 months')
 
 # ---------- Création de bases de comparaison ---------------------
 
@@ -90,7 +72,7 @@ comp_infl_short<-data.frame(
 comp_infl_short$expected=lag(comp_infl_short$name,12)
 comp_infl_short$dif=comp_infl_short$expected-comp_infl_short$tx_evol_ann_pct
 
-ggplot(comp_infl_short) + geom_line(aes(x = date, y = expected,colour='Expected'))+geom_line(aes(x = date, y = tx_evol_ann_pct,colour='Real'))+ylab('Inflation rate')+scale_color_manual(name = "Inflation", values = c("Real"='red', "Expected"='blue'))+scale_x_date(limits = c(as.Date('2014-05-01'),as.Date('2022-01-01')))+ggtitle('Comparaison inflation anticipée à m-12 et inflation réalisée')
+ggplot(comp_infl_short) + geom_line(aes(x = date, y = anticipation_short_pond$Q8v2part2_name,colour='Expected'))+geom_line(aes(x = date, y = tx_evol_ann_pct,colour='Real'))+ylab('Inflation rate')+scale_color_manual(name = "Inflation", values = c("Real"='red', "Expected"='blue'))+scale_x_date(limits = c(as.Date('2014-05-01'),as.Date('2022-01-01')))+ggtitle('Comparaison inflation anticipée à m-12 et inflation réalisée')
 
 # ---------- Comparaison pour du moyen terme ----------------------
 comp_infl_mid<-data.frame(
@@ -104,38 +86,12 @@ ggplot(comp_infl_mid) + geom_line(aes(x = date, y = expected,colour='Expected'))
 # --------- On passe maintenant aux histograms pour étudier l'hétérogénéité des réponses"
 # Court terme:
 #création d'un dataframe pour regrouper toutes les réponses:
-rep_short_13=data.frame(
-  date=Enq13$date,
-  short=Enq13$Q8v2part2
-)
-rep_short_17=data.frame(
-  date=Enq17$date,
-  short=Enq17$Q8v2part2
-)
-rep_short_20=data.frame(
-  date=Enq20$date,
-  short=Enq20$Q8v2part2
-)
 
-rep_short=rbind(rep_short_13,rep_short_17,rep_short_20)
 
-ggplot(rep_short, aes(x=short)) + geom_histogram(binwidth = 1,col='grey')+coord_cartesian(xlim=c(-5,15))+scale_x_continuous(breaks = seq(-5,15,1), lim = c(-5,15))+xlab('Inflation anticiée 12 mois après enquête')
+ggplot(anticipation_short_pond, aes(x=Q8v2part2_name)) + geom_histogram(binwidth = 1,col='grey')+coord_cartesian(xlim=c(-5,15))+scale_x_continuous(breaks = seq(-5,15,1), lim = c(-5,15))+xlab('Inflation anticiée 12 mois après enquête')
 
 #Long terme:
-rep_mid_13=data.frame(
-  date=Enq13$date,
-  mid=Enq13$Q9bv2part2
-)
-rep_mid_17=data.frame(
-  date=Enq17$date,
-  mid=Enq17$Q9bv2part2
-)
-rep_mid_20=data.frame(
-  date=Enq20$date,
-  mid=Enq20$Q9bv2part2
-)
 
-rep_mid=rbind(rep_mid_13,rep_mid_17,rep_mid_20)
 
 ggplot(rep_mid, aes(x=mid)) + geom_histogram(binwidth = 1,col='grey')+coord_cartesian(xlim=c(-5,15))+scale_x_continuous(breaks = seq(-5,15,1), lim = c(-5,15))+xlab('Inflation anticiée 12 mois après enquête')
 
@@ -286,6 +242,15 @@ for(i in 1:length(test$userid)){
 test$current_inflation=c(0)
 for(i in 1:length(inflation_US3$date)){
   test$current_inflation[test$date==inflation_US3$date[i]]<-inflation_US3$tx_evol_ann_pct[i]}
+
+regression_bellemare=lm(Q8v2part2~current_inflation+female+some_college+high_school+young+middle_age+low_income+middle_income,data = test,weights = test$weight)
+summary(regression_bellemare)
+
+stargazer(regression_bellemare)
+Enq_tot<-test
+
+# Maintenant, on va refaire des stats mais en prenant en compte la pondération :
+
 
 
 
