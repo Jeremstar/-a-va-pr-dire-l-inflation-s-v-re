@@ -1,0 +1,108 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime, timedelta
+
+#nb : importer les données différemment
+#lien de la base concaténée : https://docs.google.com/spreadsheets/d/1eeaueJ7VBaixIiwLZVnDK77eXJ3i1tW1/edit?usp=share_link&ouid=111573383883558007544&rtpof=true&sd=true
+
+import urllib
+from urllib.request import urlopen
+
+with urllib.request.urlopen("https://github.com/Jeremstar/ca-va-predire-l-inflation-severe/blob/main/données/OECD%20-%20short%20term%20economic%20indicators.xlsx") as fichier_OECD:
+   OECD = fichier_OECD.read()
+
+
+with urllib.request.urlopen("https://github.com/Jeremstar/ca-va-predire-l-inflation-severe/blob/main/données/IMF%20-%20monetary%20policy.xlsx") as fichier_IMF:
+   IMF = fichier_IMF.read()
+
+with urllib.request.urlopen("https://www.newyorkfed.org/medialibrary/interactives/sce/sce/downloads/data/frbny-sce-public-microdata-complete-13-16.xlsx") as fichier_Enq13:
+   Enq13 = fichier_Enq13.read()
+
+with urllib.request.urlopen("https://www.newyorkfed.org/medialibrary/interactives/sce/sce/downloads/data/frbny-sce-public-microdata-complete-17-19.xlsx") as fichier_Enq17:
+   Enq17 = fichier_Enq17.read()
+
+---------------------------------------------------
+
+#Graphique d'indice des prix à la consommation
+
+inflation_US = OECD[(OECD['Country'] == "United States") & (OECD['Subject2'] == "Consumer prices: all items")]
+inflation_US2 = pd.DataFrame({
+    'day': pd.to_datetime(inflation_US['Time'], format='%Y-%m-%d'),
+    'Inflation': inflation_US['Value'].astype(float)
+})
+
+plt.plot(inflation_US2['day'], inflation_US2['Inflation'], color='royalblue')
+plt.xlabel('Date')
+plt.ylabel("Prix à la consommation")
+plt.show()
+
+Enq17['Q8v2part2'].mean(skipna=True)
+
+---------------------------------------------------
+
+#Calcul du taux d'inflation
+
+inflation_US3 = pd.DataFrame({
+    'date': inflation_US2['day'],
+    'tx_evol_ann_pct': (inflation_US2['Inflation'] / inflation_US2['Inflation'].shift(12) - 1) * 100
+})
+
+---------------------------------------------------
+
+#Conversion des formats null en date
+
+Enq17['date'] = pd.to_datetime(Enq17['date'].astype(str) + '01', format='%Y%m%d')
+Enq13['date'] = pd.to_datetime(Enq13['date'].astype(str) + '01', format='%Y%m%d')
+
+---------------------------------------------------
+
+#Graphique des anticipations d'inflation à court terme
+
+anticipations_short_13 = Enq13.groupby('date')['Q8v2part2'].mean().reset_index()
+anticipations_short_17 = Enq17.groupby('date')['Q8v2part2'].mean().reset_index()
+anticipations_short = pd.concat([anticipations_short_13, anticipations_short_17])
+
+plt.plot(anticipations_short['date'], anticipations_short['Q8v2part2'])
+plt.xlabel('Date')
+plt.ylabel("Expected inflation - 12 months")
+plt.show()
+
+---------------------------------------------------
+
+#Graphique des anticipations d'inflation à moyen terme
+
+anticipations_mid_13 = Enq13.groupby('date')['Q9bv2part2'].mean().reset_index()
+anticipations_mid_17 = Enq17.groupby('date')['Q9bv2part2'].mean().reset_index()
+anticipations_mid = pd.concat([anticipations_mid_13, anticipations_mid_17])
+
+plt.plot(anticipations_mid['date'], anticipations_mid['Q9bv2part2'])
+plt.xlabel('Date')
+plt.ylabel("Expected inflation - in 36 months")
+plt.show()
+
+---------------------------------------------------
+
+#Comparaison pour du court terme
+
+comp_infl_short = pd.merge(inflation_US3, anticipations_short, on='date')
+comp_infl_short['expected'] = comp_infl_short['name'].shift(12)
+comp_infl_short['dif'] = comp_infl_short['expected'] - comp_infl_short['tx_evol_ann_pct
+
+---------------------------------------------------
+
+#Comparaison pour du moyen terme
+
+comp_infl_mid = pd.merge(inflation_US3, anticipations_mid, on='date')
+comp_infl_mid['expected'] = comp_infl_mid['name'].shift(36)
+comp_infl_mid['dif'] = comp_infl_mid['expected'] - comp_infl_mid['tx_evol_ann_pct']
+
+plt.plot(comp_infl_mid['date'], comp_infl_mid['expected'], color='blue', label='Expected')
+plt.plot(comp_infl_mid['date'], comp_infl_mid['tx_evol_ann_pct'], color='red', label='Real')
+plt.xlabel('Date')
+plt.ylabel("Inflation rate")
+plt.xlim('2016-05-01','2020-01-01')
+plt.title("Comparaison inflation anticipée à m-36 et inflation réalisée")
+plt.legend()
+plt.show()
+
+---------------------------------------------------
